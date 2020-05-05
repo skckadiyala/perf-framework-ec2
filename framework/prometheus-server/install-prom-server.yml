@@ -1,0 +1,77 @@
+---
+- hosts: prometheus
+  remote_user: "{{ ansible_user }}" 
+  vars:
+  - install_dir: "/usr/local/bin"
+  
+  tasks:
+  - name: "PS-UNINSTALL: Stop any old Prometheus processes"
+    shell: "if pgrep prometheus ; then sudo pkill prometheus ; fi"
+    ignore_errors: yes
+
+  - name: "PS-UNINSTALL: Remove Executable files"
+    shell: "cd /etc/; sudo rm -rf prometheus"
+  
+  - name: "PS-UNINSTALL: Remove Executable files"
+    shell: "cd /usr/local/bin; sudo rm -rf prometheus; sudo rm -rf promtool"
+  
+  - name: "PS-UNINSTALL: Remove Executable files"
+    shell: "cd /var/lib/; sudo rm -rf prometheus"
+  
+  - name: "PS-UNINSTALL: Remove Executable files"
+    shell: "cd /etc/systemd/system/;  sudo rm -rf prometheus.service"
+
+  - name: "PS-INSTALL: Create directories"
+    shell: "sudo mkdir /etc/prometheus; sudo mkdir /var/lib/prometheus"
+  
+  - name: "PS-INSTALL: Set the user and group ownership on the new directories to the user"
+    shell: "sudo chown ubuntu:ubuntu /var/lib/prometheus"
+
+  - name: "PS-INSTALL: Copy Prometheus.yml"
+    copy: 
+      src: ../prometheus-server/prometheus.yml
+      dest: ~/
+      mode: 0775
+
+  - name: "PS-INSTALL: Copy Prometheus service "
+    template: 
+      src: ./prometheus.service
+      dest: ~/
+
+  - name: "PS-INSTALL: Copy Prometheus folder "
+    copy: 
+      src: prometheus-2.0.0.linux-amd64
+      dest: ~/
+      mode: 0775
+
+  - name: "PS-INSTALL: Copy Prometheus and Promtool to install directory"
+    shell: "sudo cp ~/prometheus-2.0.0.linux-amd64/prometheus /usr/local/bin; sudo cp ~/prometheus-2.0.0.linux-amd64/promtool /usr/local/bin"
+
+  - name: "PS-INSTALL: Copy consoles  to /etc/prometheus"
+    shell: "sudo cp -r ~/prometheus-2.0.0.linux-amd64/consoles /etc/prometheus"
+
+  - name: "PS-INSTALL: Copy  console_libraries to /etc/prometheus"
+    shell: "sudo cp -r ~/prometheus-2.0.0.linux-amd64/console_libraries /etc/prometheus"
+
+  - name: "PS-INSTALL: Copy  prometheus.yml to /etc/prometheus"
+    shell: "sudo cp -r ~/prometheus.yml /etc/prometheus"
+  
+  - name: "PS-INSTALL: Copy  prometheus.service to /etc/prometheus"
+    shell: "sudo cp -r ~/prometheus.service /etc/systemd/system/"
+
+  - name: "PS-INSTALL: Load Configuration"
+    shell: "sudo -u ubuntu /usr/local/bin/prometheus \
+             --config.file /etc/prometheus/prometheus.yml \
+             --storage.tsdb.path /var/lib/prometheus/ \
+             --web.console.templates=/etc/prometheus/consoles \
+             --web.console.libraries=/etc/prometheus/console_libraries &"
+  
+  - name: "NE-UNINSTALL: Stop any old Node Exporter processes"
+    shell: "if pgrep prometheus ; then sudo pkill prometheus ; fi"
+    ignore_errors: yes
+
+  - name: "PS-INSTALL: Daemon-Reload"
+    shell: "sudo systemctl daemon-reload"
+
+  - name: "PS-INSTALL: Start Prometheus"
+    shell: "sudo systemctl start prometheus"

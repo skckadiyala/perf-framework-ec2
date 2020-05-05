@@ -1,0 +1,24 @@
+---
+- hosts: backend
+  remote_user: "{{ ansible_user }}"
+  become: true
+  become_method: 'sudo'
+  tasks:
+  - service: name=nginx state=stopped
+    ignore_errors: yes
+  - service: name=nginx enabled=no
+    ignore_errors: yes
+  - name: Remove Nginx
+    yum: name=nginx state=absent 
+  - name: Remove libbrotli
+    yum: name=libbrotli state=absent 
+  - name: Remove libmaxminddb
+    yum: name=libmaxminddb state=absent 
+  - name: Put The Nginx Repo file in Place
+    file: src=nginx.repo dest=/etc/yum.repos.d/nginx.repo state=absent
+  - name: upgrade all packages
+    yum: name=* state=latest
+  - name: Show connected Ports - Looking for Open Ports
+    command: netstat -ntlp
+    register: netstat
+  - debug: var=netstat.stdout_lines

@@ -1,0 +1,11 @@
+terraform.tfstate
+terraform.out
+london*
+.terraform
+terraform.tfstate.backup
+framework/.DS_Store
+framework/jmeter/.DS_Store
+framework/jmeter/JWTSigner.jar
+framework/jmeter/oauth-certs.tar.gz
+falcons-apigw-key-pair
+falcons-apigw-key-pair.pub

@@ -1,0 +1,43 @@
+---
+- hosts: generator, backend
+  name: Install CI Java on all Hosts
+  remote_user:  "{{ ansible_user }}"
+  gather_facts: true
+  tasks:
+    # - name: JAVA-INSTALL  Ensure ECD Repo is in place 7
+    #   copy: src=templates/CentOS-Axway-{{ ansible_distribution_major_version }}.repo dest=/etc/yum.repos.d/CentOS-Axway.repo owner=root group=root mode=0644
+    #   become: true
+    #   when: ( ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat' )
+
+    - name: JAVA-INSTALL  Install version 8.0.242 of zulu-openjdk 
+      become: true
+      shell: cd /usr/local; sudo wget https://cdn.azul.com/zulu/bin/zulu8.44.0.11-ca-jdk8.0.242-linux_x64.tar.gz; tar -xvaf zulu8.44.0.11-ca-jdk8.0.242-linux_x64.tar.gz
+
+    - name: "JAVA-INSTALL  Set JAVA_HOME in Users bashrc"
+      lineinfile: dest=.bashrc line='export JAVA_HOME=/usr/local/zulu8.44.0.11-ca-jdk8.0.242-linux_x64/jre' state=present
+
+    - name: "JAVA-INSTALL  Set PATH in Users bashrc"
+      lineinfile: dest=.bashrc line='export PATH=$JAVA_HOME/bin:$PATH' state=present
+
+    # Set JAVA as required in New Cassandra Startup Script
+    - name: "JAVA-INSTALL  Set JAVA_HOME in Root Users bashrc"
+      lineinfile: dest=.bashrc line='export JAVA=$JAVA_HOME/bin/java' state=present
+
+    - name: "JAVA-INSTALL  Set JAVA_HOME in /etc/environment"
+      become: true
+      lineinfile: dest=/etc/environment line='JAVA_HOME=/usr/local/zulu8.44.0.11-ca-jdk8.0.242-linux_x64/jre' state=present
+
+    # Changes for Root User
+    - name: "JAVA-INSTALL  Set JAVA_HOME in Root Users bashrc"
+      become: true
+      lineinfile: dest=.bashrc line='export JAVA_HOME=/usr/local/zulu8.44.0.11-ca-jdk8.0.242-linux_x64/jre' state=present
+
+    # Set JAVA as required in New Cassandra Startup Script
+    - name: "JAVA-INSTALL  Set JAVA_HOME in Root Users bashrc"
+      become: true
+      lineinfile: dest=.bashrc line='export JAVA=$JAVA_HOME/bin/java' state=present
+
+    - name: "JAVA-INSTALL  Set PATH in Root USERs bashrc - as a backup"
+      become: true
+      lineinfile: dest=.bashrc line='export PATH=$JAVA_HOME/bin:$PATH' state=present
+

@@ -1,0 +1,27 @@
+---
+- hosts: monitoring
+  name: Install InfluxDB 
+  remote_user:  "{{ ansible_user }}"
+  gather_facts: true
+  # become_method: 'sudo'
+  tasks:
+  - name: Update apt-get repo and cache
+    apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+    become: true
+
+  - name: Installs influxDB  server
+    apt: pkg=influxdb update_cache=yes
+    become: true
+    notify:
+      - start influxdb
+      
+  - name: Installs influx-client 
+    apt: pkg=influxdb-client update_cache=yes
+    become: true
+
+  - name: Create Jmeter Database 
+    command: influx -host 'localhost' -port '8086' -execute 'CREATE DATABASE jmeter'
+
+  handlers:
+  - name: start influxdb
+    service: name=influxdb state=started

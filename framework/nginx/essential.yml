@@ -1,0 +1,51 @@
+  - name: Install Nginx on Redhat 6
+    become_user: true
+    yum: name=http://dexter.lab.dubl.axway.int/gold/packages/nginx-1.10.1-1.el6.ngx.x86_64.rpm state=present
+    when: ansible_distribution_major_version == "6"
+
+  - name: Install Nginx on Redhat 7
+    become_user: true
+    yum: name=http://dexter.lab.dubl.axway.int/gold/packages/nginx-1.10.1-1.el7.ngx.x86_64.rpm state=present
+    when: ansible_distribution_major_version == "7"
+
+  - name: Copy default.conf file into Place
+    become_user: true
+    copy: src=../nginx/default.conf dest=/etc/nginx/conf.d/default.conf
+
+  - name: Copy example_ssl.conf into Place
+    become_user: true
+    copy: src=../nginx/example_ssl.conf dest=/etc/nginx/conf.d/example_ssl.conf
+
+  - name: Put The Nginx Conf file in Place - Keepalive Set Here
+    become_user: true
+    copy: src=../nginx/nginx.conf dest=/etc/nginx/nginx.conf
+
+  - name: Copy Backend Response Files
+    become_user: true
+    copy: src=../nginx/weather_country.response dest=/usr/share/nginx/html/weather_country.response
+
+  - name: Copy SSL cert.pem
+    become_user: true
+    copy: src=../nginx/cert.pem dest=/etc/nginx/cert.pem
+
+  - name: Copy SSL cert.key
+    become_user: true
+    copy: src=../nginx/cert.key dest=/etc/nginx/cert.key
+
+  - name: Set ip_nonlocal_bind in /etc/sysctl.conf file
+    become_user: true
+    lineinfile: dest=/etc/sysctl.conf line='net.ipv4.ip_nonlocal_bind = 1' state=present
+
+  - name: semanage http_port_t adding 8880
+    become_user: true
+    command: semanage port -a -t http_port_t -p tcp 8880
+    ignore_errors: yes
+
+  - name: Enable and Restart Service
+    become_user: true
+    service: name=nginx enabled=yes state=restarted
+
+  - name: Show connected Ports - Looking for Open Ports
+    command: netstat -ntlp
+    register: netstat
+  - debug: var=netstat.stdout_lines

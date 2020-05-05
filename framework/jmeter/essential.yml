@@ -1,0 +1,76 @@
+---
+- hosts: generator
+  name: Install JMeter on generator
+  remote_user: "{{ ansible_user }}"
+  tasks:
+    
+  - name: "JMETER-INIT-ESSENTIAL: Check if JMeter is Installed - 5.0 {{ install_dir }}/apache-jmeter-5.0/bin/jmeter"
+    stat: path={{ install_dir }}/apache-jmeter-5.0/bin/jmeter
+    register: stat_result3
+
+  - name: "JMETER-INIT-ESSENTIAL: Download the Jmeter Binaries from Dexter"
+    get_url: url=https://archive.apache.org/dist/jmeter/binaries/{{ item.filename }} dest=/tmp/{{ item.filename }}
+    when: stat_result3.stat.exists == False
+    with_items:
+    - { filename: 'apache-jmeter-5.0.tgz' }
+
+  - name: "JMETER-INIT-ESSENTIAL: Mkdir if not already done - {{ install_dir }}"
+    file: path={{ install_dir }} state=directory
+
+  - name: "JMETER-INIT-ESSENTIAL: UnCompress Jmeter"
+    command: tar -xzvf /tmp/{{ item.filename }} -C {{ install_dir }}
+    when: stat_result3.stat.exists == False
+    with_items:
+    - { filename: 'apache-jmeter-5.0.tgz' }
+
+  - name: "JMETER-INIT-ESSENTIAL: Cleanup Binaries"
+    file: path=/tmp/{{ item.filename }} state=absent
+    when: stat_result3.stat.exists == False
+    with_items:
+    - { filename: 'apache-jmeter-5.0.tgz' }
+
+  - name: "JMETER-INIT-ESSENTIAL: Download the JWTSigner from Dexter - {{ install_dir }}/{{ item.filename }}/lib/ext/JWTSigner.jar"
+    copy: src=JWTSigner.jar  dest={{ install_dir }}/{{ item.filename }}/lib/ext/JWTSigner.jar
+    ignore_errors: yes
+    with_items:
+    - { filename: 'apache-jmeter-5.0' }
+
+  - name: "JMETER-INIT-ESSENTIAL: Download the jmeter-plugins-casutg-2.9  - {{ install_dir }}/{{ item.filename }}/lib/ext/jmeter-plugins-casutg-2.9.jar"
+    copy: src=jmeter-plugins-casutg-2.9.jar  dest={{ install_dir }}/{{ item.filename }}/lib/ext/jmeter-plugins-casutg-2.9.jar
+    ignore_errors: yes
+    with_items:
+    - { filename: 'apache-jmeter-5.0' }
+
+  - name: "JMETER-INIT-ESSENTIAL: Download the JMeter-InfluxDB-Writer-plugin-1.2  - {{ install_dir }}/{{ item.filename }}/lib/ext/JMeter-InfluxDB-Writer-plugin-1.2.jar"
+    copy: src=JMeter-InfluxDB-Writer-plugin-1.2.jar  dest={{ install_dir }}/{{ item.filename }}/lib/ext/JMeter-InfluxDB-Writer-plugin-1.2.jar
+    ignore_errors: yes
+    with_items:
+    - { filename: 'apache-jmeter-5.0' }
+
+  - name: "JMETER-INIT-ESSENTIAL: Copy OAuth Required Certs to Generator"
+    stat: path=/tmp/oauth-certs.tar.gz
+    register: stat_result_oauth
+
+  - name: "JMETER-INIT-ESSENTIAL: Download the OAuth JWT Test Certs from Dexter - /tmp/oauth-certs.tar.gz"
+    copy: src=oauth-certs.tar.gz  dest=/tmp/oauth-certs.tar.gz
+    when: stat_result_oauth.stat.exists == False
+
+  - name: "JMETER-INIT-ESSENTIAL: Copy JMX file"
+    copy: src=get_todos_focused.jmx dest=/tmp/get_todos_focused.jmx
+
+  - name: "JMETER-INIT-ESSENTIAL: Copy Prop file"
+    copy: src=jmeter.props  dest=/tmp/jmeter.props
+
+  - name: "JMETER-INIT-ESSENTIAL: UnCompress OAuth Test Certs to Folder"
+    command: tar -xzvf /tmp/oauth-certs.tar.gz -C /tmp/
+    when: stat_result_oauth.stat.exists == False
+
+  - name: "JMETER-INIT-ESSENTIAL: Cleanup Oauth Test Cert Binaries"
+    file: path=/tmp/oauth-certs.tar.gz state=absent
+    when: stat_result_oauth.stat.exists == False
+
+  - name: "JMETER-INIT-ESSENTIAL: Set JAVA_HOME in Users bashrc"
+    lineinfile: dest=~/.bashrc line='export JAVA_HOME=/usr/local/zulu8.44.0.11-ca-jdk8.0.242-linux_x64/jre' state=present
+
+  - name: "JMETER-INIT-ESSENTIAL: Set PATH in root bashrc"
+    lineinfile: dest=~/.bashrc line='export PATH=$JAVA_HOME/bin:$PATH' state=present

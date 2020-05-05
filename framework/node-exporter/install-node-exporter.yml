@@ -1,0 +1,36 @@
+---
+- hosts: backend, generator
+  remote_user: "{{ ansible_user }}" 
+  become: true
+  vars:
+  - install_dir: "/usr/local/bin"
+  
+  tasks:
+  - name: "NE-UNINSTALL: Stop any old Node Exporter processes"
+    shell: "if pgrep node_exporter ; then systemctl stop node_exporter ; fi"
+    ignore_errors: yes
+
+  - name: "NE-UNINSTALL: Remove Executable files"
+    shell: "cd {{ install_dir }}; rm -rf node_exporter"
+
+  - name: "NE-UNINSTALL: Remove service files"
+    shell: "cd /etc/systemd/system; rm -rf node_exporter.service"
+
+  - name: "NE-INSTALL: Copy Node Exporter to install directory"
+    copy: 
+      src: node_exporter
+      dest: /usr/local/bin
+      mode: 0775
+
+  - name: "NE-INSTALL: Copy Node Exporter service file to /etc/systemd/system folder"
+    template: 
+      src: ./node_exporter.service 
+      dest: /etc/systemd/system
+
+  - name: "NE-INSTALL: Daemon-Reload"
+    shell: "systemctl daemon-reload"
+
+  - name: "NE-INSTALL: Start Node Exporter"
+    shell: "systemctl start node_exporter"
+
+    
